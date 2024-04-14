@@ -133,7 +133,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
              message: result.text,
              buttonText: result.buttonText
          ) { [weak self] in
-             guard let self = self else { return }
+             guard let self else { return }
 
              self.currentQuestionIndex = 0
              self.correctAnswers = 0

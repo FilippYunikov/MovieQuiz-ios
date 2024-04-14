@@ -18,10 +18,9 @@ class AlertPresenter {
 
     func show(data: AlertModel) {
         let alert = UIAlertController(title: data.title, message: data.message, preferredStyle: .alert)
-            let action = UIAlertAction(title: data.buttonText, style: .default, handler: { _ in
-                data.completion()
-            })
-    
+        let action = UIAlertAction(title: data.buttonText, style: .default) { _ in
+                   data.completion()
+               }
         alert.addAction(action)
 
         view?.present(alert, animated: true, completion: nil)
