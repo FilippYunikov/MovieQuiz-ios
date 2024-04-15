@@ -115,15 +115,20 @@
                                     </stackView>
                                 </subviews>
                             </stackView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="XDy-L1-zv5">
+                                <rect key="frame" x="205" y="456" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="YP Black"/>
                         <color key="tintColor" name="YP Black"/>
                         <constraints>
+                            <constraint firstItem="XDy-L1-zv5" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="R0V-WO-rUh"/>
                             <constraint firstItem="v8t-lJ-sjF" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="R5U-vi-f0M"/>
                             <constraint firstItem="v8t-lJ-sjF" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="10" id="eUh-IB-9Gu"/>
                             <constraint firstItem="v8t-lJ-sjF" firstAttribute="bottom" secondItem="6Tk-OE-BBY" secondAttribute="bottom" id="fT3-gk-GYJ"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="v8t-lJ-sjF" secondAttribute="trailing" constant="20" id="nqP-Sf-zOi"/>
+                            <constraint firstItem="XDy-L1-zv5" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="yjG-wr-tBv"/>
                         </constraints>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
@@ -132,6 +137,7 @@
                         </userDefinedRuntimeAttributes>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="XDy-L1-zv5" id="aMD-xf-jbT"/>
                         <outlet property="counterLabel" destination="GYY-qU-etd" id="6x5-fW-QeR"/>
                         <outlet property="imageView" destination="sgI-2M-8my" id="UVv-la-NeA"/>
                         <outlet property="noButton" destination="djA-aH-abT" id="qHA-Nm-ntw"/>
