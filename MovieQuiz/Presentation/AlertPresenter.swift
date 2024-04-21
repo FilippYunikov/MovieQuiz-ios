@@ -22,6 +22,7 @@ class AlertPresenter {
                    data.completion()
                }
         alert.addAction(action)
+        alert.view.accessibilityIdentifier = "Game results"
 
         view?.present(alert, animated: true, completion: nil)
     }
