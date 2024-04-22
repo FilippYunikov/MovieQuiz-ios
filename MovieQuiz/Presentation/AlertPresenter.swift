@@ -18,10 +18,13 @@ class AlertPresenter {
 
     func show(data: AlertModel) {
         let alert = UIAlertController(title: data.title, message: data.message, preferredStyle: .alert)
+        
         let action = UIAlertAction(title: data.buttonText, style: .default) { _ in
                    data.completion()
                }
+        alert.view.accessibilityIdentifier = "Game results"
         alert.addAction(action)
+ 
 
         view?.present(alert, animated: true, completion: nil)
     }

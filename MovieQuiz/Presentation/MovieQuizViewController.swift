@@ -1,250 +1,94 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
+final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
     @IBOutlet private var imageView: UIImageView!
     @IBOutlet private var textLabel: UILabel!
     @IBOutlet private var counterLabel: UILabel!
     @IBOutlet private var noButton: UIButton!
     @IBOutlet private var yesButton: UIButton!
     @IBOutlet private var activityIndicator: UIActivityIndicatorView!
-    weak var delegate: QuestionFactoryDelegate?
     
-    private var currentQuestionIndex = 0
-    private var correctAnswers = 0
-    private let questionAmount: Int = 10
-    private var questionFactory: QuestionFactoryProtocol?
-    private var currentQuestion: QuizQuestion?
-    private var alertPresenter: AlertPresenter?
-    private var statisticService: StatisticService?
-
-
+    private var presenter: MovieQuizPresenter!
+    
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        alertPresenter = AlertPresenter(view: self)
+        
+        presenter = MovieQuizPresenter(viewController: self)
+        
         imageView.layer.cornerRadius = 20
-        self.statisticService = StatisticServiceImplementation()
-         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-         showLoadingIndicator()
-         questionFactory?.loadData()
-
     }
-    // MARK: - QuestionFactoryDelegate
     
-
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else {
-            return
+    func show(quiz step: QuizStepViewModel) {
+        imageView.layer.borderColor = UIColor.clear.cgColor
+        imageView.image = step.image
+        textLabel.text = step.question
+        counterLabel.text = step.questionNumber
+    }
+    
+    func show(quiz result: QuizResultsViewModel) {
+        let message = presenter.makeResultsMessage()
+        
+        let alert = UIAlertController(
+            title: result.title,
+            message: message,
+            preferredStyle: .alert)
+        alert.view.accessibilityIdentifier = "Game results"
+        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            
+            self.presenter.restartGame()
         }
-
-        currentQuestion = question
-        let viewModel = convert(model: question)
-        DispatchQueue.main.async { [weak self] in
-            self?.show(quiz: viewModel)
-        }
+        
+        alert.addAction(action)
+        
+        self.present(alert, animated: true, completion: nil)
     }
     
-    func didLoadDataFromServer() {
-        hideLoadingIndicator()
-        questionFactory?.requestNextQuestion()
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 8
+        imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
     }
     
-    func didFailToLoadData(with error: Error) {
-        showNetworkError(message: error.localizedDescription)
-    }
-    
-    private func showLoadingIndicator() {
+    func showLoadingIndicator() {
         activityIndicator.isHidden = false
         activityIndicator.startAnimating()
     }
     
-    private func hideLoadingIndicator() {
+    func hideLoadingIndicator() {
         activityIndicator.isHidden = true
     }
     
-    internal func showNetworkError(message: String) {
+    func showNetworkError(message: String) {
         hideLoadingIndicator()
         
-        let model = AlertModel(title: "Ошибка",
-                               message: message,
-                               buttonText: "Попробовать еще раз") { [weak self] in
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: message,
+            preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Попробовать ещё раз",
+                                   style: .default) { [weak self] _ in
             guard let self = self else { return }
             
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
-            
-            self.questionFactory?.requestNextQuestion()
+            self.presenter.restartGame()
         }
-        alertPresenter?.show(data: model)
+        
+        alert.addAction(action)
     }
-
+    
+    func didRecieveNextQuestion(question: QuizQuestion?) {
+        presenter.didRecieveNextQuestion(question: question)
+    }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let givenAnswer = true 
-        
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        presenter.yesButtonClicked()
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let givenAnswer = false // 2
-        
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
-    }
-
-    
-
-    
-    private func showNextQuestionOrResults() {
-        if currentQuestionIndex == questionAmount - 1 {
-            statisticService?.store(correct: correctAnswers, total: questionAmount)
-        
-            guard let record = statisticService?.bestGame,
-                  let gamesCount = statisticService?.gamesCount,
-                  let acuracy = statisticService?.totalAccuracy else {
-                return
-            }
-
-            let message = "Ваш результат: \(correctAnswers)/\(questionAmount)\nКоличество сыгранных квизов: \(gamesCount)\nРекорд: \(record.correct)/\(record.total) (\(record.date))\nСредняя точность: \(String(format: "%.2f", acuracy))%"
-            
-            let result = QuizResultsViewModel(
-                title: "Этот раунд окончен!",
-                text: message,
-                buttonText: "Сыграть еще раз")
-            
-            show(quiz: result)
-        } else {
-            currentQuestionIndex += 1
-            
-            questionFactory?.requestNextQuestion()
-        }
+        presenter.noButtonClicked()
     }
     
-    
-    private func showAnswerResult(isCorrect: Bool) {
-        if isCorrect { 
-            correctAnswers += 1 
-        }
-        
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 8
-        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        yesButton.isEnabled = false
-        noButton.isEnabled = false
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            
-            self.showNextQuestionOrResults()
-            self.imageView.layer.borderWidth = 0
-            self.yesButton.isEnabled = true
-            self.noButton.isEnabled = true
-        }
-    }
-    
-    
-    
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionAmount)")
-    } 
-    
-
-    
-    private func show(quiz step: QuizStepViewModel) {
-        imageView.image = step.image
-        textLabel.text = step.question
-        counterLabel.text = step.questionNumber
-        
-        
-    }
-    
-
-    private func show(quiz result: QuizResultsViewModel) {
-         let alertData = AlertModel(
-             title: result.title,
-             message: result.text,
-             buttonText: result.buttonText
-         ) { [weak self] in
-             guard let self else { return }
-
-             self.currentQuestionIndex = 0
-             self.correctAnswers = 0
-             self.questionFactory?.requestNextQuestion()
-         }
-
-         alertPresenter?.show(data: alertData)
-     }
-    
-
 }
-
-/*
- Mock-данные
- 
- 
- Картинка: The Godfather
- Настоящий рейтинг: 9,2
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Dark Knight
- Настоящий рейтинг: 9
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Kill Bill
- Настоящий рейтинг: 8,1
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Avengers
- Настоящий рейтинг: 8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Deadpool
- Настоящий рейтинг: 8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Green Knight
- Настоящий рейтинг: 6,6
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Old
- Настоящий рейтинг: 5,8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: The Ice Age Adventures of Buck Wild
- Настоящий рейтинг: 4,3
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: Tesla
- Настоящий рейтинг: 5,1
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: Vivarium
- Настоящий рейтинг: 5,8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- */
