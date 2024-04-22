@@ -42,16 +42,16 @@ class QuestionFactory: QuestionFactoryProtocol  {
             guard let movie = self.movies[safe: index] else { return }
             
             var imageData = Data()
-           
-           do {
+            
+            do {
                 imageData = try Data(contentsOf: movie.imageURL)
             } catch {
                 DispatchQueue.main.async { [weak self] in
-                              guard let self = self else { return }
-
-                              self.delegate?.showNetworkError(message: "Failed to load image")
-                           
-                             }
+                    guard let self = self else { return }
+                    
+                    self.delegate?.showNetworkError(message: "Failed to load image")
+                    
+                }
             }
             
             let rating = Float(movie.rating) ?? 0
@@ -60,13 +60,13 @@ class QuestionFactory: QuestionFactoryProtocol  {
             let correctAnswer = rating > 7
             
             let question = QuizQuestion(image: imageData,
-                                         text: text,
-                                         correctAnswer: correctAnswer)
+                                        text: text,
+                                        correctAnswer: correctAnswer)
             
             DispatchQueue.main.async { [weak self] in
-                       guard let self = self else { return }
-                       self.delegate?.didRecieveNextQuestion(question: question)
-                   }
+                guard let self = self else { return }
+                self.delegate?.didRecieveNextQuestion(question: question)
+            }
         }
     }
 }
